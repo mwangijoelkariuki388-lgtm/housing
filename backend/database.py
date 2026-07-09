@@ -16,6 +16,7 @@
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import text
 
 # Read DATABASE_URL from environment (Render sets this automatically
 # when you create a PostgreSQL database and attach it to your service).
@@ -47,6 +48,26 @@ async def get_db():
 
 
 async def init_db():
+    from backend.models import Listing, Area, User, Favorite
     async with engine.begin() as conn:
-        from backend.models import Listing, Area, User, Favorite
         await conn.run_sync(Base.metadata.create_all)
+
+    # Migration: add columns that may be missing on existing production databases
+    if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
+        async with engine.begin() as conn:
+            migrations = [
+                "ALTER TABLE listings ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION",
+                "ALTER TABLE listings ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION",
+                "ALTER TABLE listings ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id)",
+                "ALTER TABLE listings ADD COLUMN IF NOT EXISTS amenities TEXT DEFAULT ''",
+                "ALTER TABLE listings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()",
+                "ALTER TABLE areas ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION",
+                "ALTER TABLE areas ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS id_number VARCHAR(50)",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE",
+            ]
+            for stmt in migrations:
+                try:
+                    await conn.execute(text(stmt))
+                except Exception:
+                    pass  # Column may already exist or other transient issue
