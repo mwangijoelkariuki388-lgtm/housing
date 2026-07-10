@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
 
 # Create the FastAPI application instance
 app = FastAPI(
-    title="Keja Link",
+    title="Keja Go",
     version="1.0.0",
     lifespan=lifespan,              # Register the lifecycle handler
 )

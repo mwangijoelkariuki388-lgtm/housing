@@ -498,8 +498,8 @@ function renderAbout() {
     return `
         <div class="about-container">
             <div class="about-card">
-                <h2><i class="fas fa-home" style="color:#2E7D32;"></i> About Keja Link</h2>
-                <p>Keja Link helps University of Embu students find safe, affordable, and verified housing near campus. We focus on Embu town and surrounding areas — from Gakwegori to Kangaru, Njukiri to Town.</p>
+                <h2><i class="fas fa-home" style="color:#2E7D32;"></i> About Keja Go</h2>
+                <p>Keja Go helps University of Embu students find safe, affordable, and verified housing near campus. We focus on Embu town and surrounding areas — from Gakwegori to Kangaru, Njukiri to Town.</p>
                 <p>We partner with trusted landlords and verify listings so you can focus on your studies, not your housing.</p>
             </div>
             <div class="about-card">
@@ -515,7 +515,7 @@ function renderAbout() {
             </div>
             <div class="about-card">
                 <h2><i class="fas fa-users" style="color:#2E7D32;"></i> For Landlords</h2>
-                <p>Have a room near University of Embu? List it for free on Keja Link and reach thousands of students actively looking for housing.</p>
+                <p>Have a room near University of Embu? List it for free on Keja Go and reach thousands of students actively looking for housing.</p>
                 <p><a href="#/add" onclick="navigate('#/add')">List your room now <i class="fas fa-arrow-right"></i></a></p>
             </div>
             <div class="about-card">
@@ -534,7 +534,7 @@ function renderLogin() {
         <div class="login-container">
             <div class="login-card">
                 <h2 style="text-align:center;margin-bottom:0.5rem;">Welcome Back</h2>
-                <p style="text-align:center;color:#666;margin-bottom:1.5rem;">Sign in to your Keja Link account</p>
+                <p style="text-align:center;color:#666;margin-bottom:1.5rem;">Sign in to your Keja Go account</p>
                 <form id="login-form" onsubmit="event.preventDefault(); handleLogin()">
                     <div class="form-group">
                         <label>Email</label>
@@ -563,7 +563,7 @@ function renderRegister() {
         <div class="login-container">
             <div class="login-card" style="max-width:480px;">
                 <h2 style="text-align:center;margin-bottom:0.5rem;">Create Account</h2>
-                <p style="text-align:center;color:#666;margin-bottom:1.5rem;">Join Keja Link as a student or landlord</p>
+                <p style="text-align:center;color:#666;margin-bottom:1.5rem;">Join Keja Go as a student or landlord</p>
                 <form id="register-form" onsubmit="event.preventDefault(); handleRegister()">
                     <div class="form-group">
                         <label>Full Name</label>
@@ -819,7 +819,7 @@ function renderAdmin() {
                 <button class="btn btn-sm btn-danger" onclick="adminLogout()" style="font-size:0.85rem;"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
             <div class="admin-section admin-intro">
-                <p>Manage listings and areas on Keja Link. Use the table below to edit, verify, or delete listings. Use the <strong>Manage Areas</strong> section to add or remove neighbourhoods — new areas appear immediately in the add-listing form dropdown.</p>
+                <p>Manage listings and areas on Keja Go. Use the table below to edit, verify, or delete listings. Use the <strong>Manage Areas</strong> section to add or remove neighbourhoods — new areas appear immediately in the add-listing form dropdown.</p>
             </div>
             ${statsHtml}
             ${areaManagementHtml}

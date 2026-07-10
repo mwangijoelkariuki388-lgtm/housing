@@ -1,4 +1,4 @@
-Keja Link is a student housing platform focused on **Embu, Kenya** — specifically areas around University of Embu.
+Keja Go is a student housing platform focused on **Embu, Kenya** — specifically areas around University of Embu.
 
 ---
 
