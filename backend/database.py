@@ -32,7 +32,8 @@ else:
     DATABASE_URL = "sqlite+aiosqlite:///./backend/keja-go.db"
 
 # Create the async engine
-engine = create_async_engine(DATABASE_URL, echo=False)
+connect_args = {"timeout": 30} if DATABASE_URL.startswith("postgresql") else {}
+engine = create_async_engine(DATABASE_URL, echo=False, connect_args=connect_args)
 
 # Create a session factory
 async_session = async_sessionmaker(engine, expire_on_commit=False)

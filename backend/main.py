@@ -44,16 +44,13 @@ from backend.routers import listings, areas, contact, auth, favorites
 async def lifespan(app: FastAPI):
     """
     Lifespan handler — runs code on startup and shutdown.
-    This replaces the deprecated on_event("startup") pattern.
-
-    The code before "yield" runs on startup.
-    The code after "yield" runs on shutdown (we don't have any).
-
     Here we initialize the database tables when the app starts.
     """
-    await init_db()     # Create database tables if they don't exist
+    try:
+        await init_db()
+    except Exception as e:
+        print(f"DB init error (non-fatal): {e}")
     yield
-    # Cleanup code would go here (if needed)
 
 
 # Create the FastAPI application instance
