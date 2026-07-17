@@ -272,7 +272,5 @@ function apiRemoveFavorite(listingId) {
 function imageUrl(filename) {
     if (!filename) return '';
     if (filename.startsWith('http')) return filename;
-    // Local files are served by FastAPI's StaticFiles mount
-    // at the /api/images/ path, which maps to backend/uploads/
-    return `/api/images/${filename}`;
+    return `https://abwrnzlzuaswcppmhggi.supabase.co/storage/v1/object/public/listing-images/${filename}`;
 }

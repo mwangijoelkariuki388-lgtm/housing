@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
 *.db
-backend/uploads/*
-!backend/uploads/.gitkeep
+backend/uploads/
 venv/
 .env
 AGENTS.md

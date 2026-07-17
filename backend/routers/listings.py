@@ -35,21 +35,19 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from supabase import create_client, Client
 
 from backend.database import get_db
 from backend.models import Listing
 from backend.schemas import ListingCreate, ListingResponse, ListingUpdate
 from backend.routers.auth import get_current_user_optional
 
-# Create the router. prefix="/api/listings" means all routes
-# here are mounted at /api/listings. So @router.get("") becomes
-# GET /api/listings, @router.get("/{id}") becomes GET /api/listings/5.
-router = APIRouter(prefix="/api/listings", tags=["listings"])
+supabase: Client = create_client(
+    os.getenv("SUPABASE_URL", ""),
+    os.getenv("SUPABASE_SERVICE_KEY", ""),
+)
 
-# Directory where uploaded images are stored
-# Path is relative to the project root
-UPLOAD_DIR = "backend/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+router = APIRouter(prefix="/api/listings", tags=["listings"])
 
 
 # ===================== LIST (with filters) =====================
@@ -163,10 +161,8 @@ async def create_listing(
             continue
         ext = os.path.splitext(img.filename)[1] if img.filename else ".jpg"
         filename = f"{uuid.uuid4().hex}{ext}"
-        path = os.path.join(UPLOAD_DIR, filename)
         content = await img.read()
-        with open(path, "wb") as f:
-            f.write(content)
+        supabase.storage.from_("listing-images").upload(filename, content)
         saved_images.append(filename)
 
     if not saved_images:
@@ -238,9 +234,12 @@ async def delete_listing(
 
     images = listing.images.split(",") if listing.images else []
     for img in images:
-        path = os.path.join(UPLOAD_DIR, img.strip())
-        if os.path.exists(path):
-            os.remove(path)
+        img = img.strip()
+        if img:
+            try:
+                supabase.storage.from_("listing-images").remove([img])
+            except Exception:
+                pass
 
     await db.delete(listing)
     await db.commit()

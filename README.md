@@ -21,10 +21,10 @@ Keja Go is a student housing platform focused on **Embu, Kenya** — specificall
 |-------|------------|
 | Frontend | HTML5, CSS3, Vanilla JavaScript (SPA with hash routing) |
 | Backend | Python 3.10+, FastAPI |
-| Database | SQLite (dev, via `aiosqlite`) / PostgreSQL (prod, via `asyncpg`) |
+| Database | PostgreSQL on Supabase (via `asyncpg`, SQLAlchemy 2.x) |
 | Auth | JWT (`python-jose[cryptography]`) + bcrypt (`passlib[bcrypt]`) |
 | ORM | SQLAlchemy 2.x (async) |
-| Image storage | Local filesystem (`backend/uploads/`) |
+| Image storage | Supabase Storage (bucket `listing-images`) |
 
 ## Getting Started (Local Development)
 
@@ -41,23 +41,38 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Seed the database
+### 3. Set up Supabase
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Create a **public** bucket called `listing-images` in Supabase Storage
+3. Copy your project's **connection string (URI)** from Connect → Database
+4. Get your **service_role key** from Project Settings → API
+
+### 4. Configure environment variables
+
+Create a `.env` file (already gitignored):
+
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:YOUR_PASSWORD@db.YOUR_REF.supabase.co:5432/postgres
+SUPABASE_URL=https://YOUR_REF.supabase.co
+SUPABASE_SERVICE_KEY=your_service_role_key
+```
+
+### 5. Seed the database
 
 ```bash
 python -m backend.seed
 ```
 
-### 4. Run the server
+> On first run, tables are auto-created by SQLAlchemy. Use `--force` to re-seed.
+
+### 6. Run the server
 
 ```bash
 uvicorn backend.main:app --reload --port 8000
 ```
 
 Open http://localhost:8000 in your browser.
-
-> Locally, the app uses SQLite (zero-config, file stored at `backend/keja-go.db`).
-> In production (Render), it uses PostgreSQL via the `DATABASE_URL` environment variable.
-> To re-seed on PostgreSQL: `python -m backend.seed --force`
 
 ## Areas Covered
 
@@ -83,13 +98,14 @@ housing/
 ├── requirements.txt
 ├── Procfile
 ├── runtime.txt
+├── .env                     # Environment variables (gitignored)
+├── opencode.json            # AI assistant MCP config
 ├── backend/
 │   ├── main.py              # FastAPI app + static file serving
 │   ├── database.py           # Async SQLAlchemy engine + session
 │   ├── models.py             # SQLAlchemy ORM models (Listing, Area, User, Favorite)
 │   ├── schemas.py            # Pydantic request/response schemas
 │   ├── seed.py               # Database seeder (sample data)
-│   ├── uploads/              # Uploaded images (gitignored)
 │   └── routers/
 │       ├── listings.py       # CRUD + search/filter for listings (ownership enforced)
 │       ├── areas.py          # CRUD for areas (with lat/lng coordinates)
@@ -141,7 +157,6 @@ housing/
 | POST | `/api/areas` | Create a new area (admin) |
 | DELETE | `/api/areas/:id` | Delete an area (admin, blocked if listings reference it) |
 | POST | `/api/contact/:id` | Submit a contact enquiry for a listing |
-| GET | `/api/images/:filename` | Serve uploaded images |
 
 ## Frontend Routes
 

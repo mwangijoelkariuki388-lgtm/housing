@@ -89,19 +89,6 @@ app.include_router(auth.router)       # /api/auth/*
 app.include_router(favorites.router)  # /api/favorites/*
 
 
-# ===================== STATIC FILES: IMAGES =====================
-# Mount the uploads directory at /api/images/ so uploaded
-# images are accessible via URLs like /api/images/abc123.jpg
-UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
-os.makedirs(str(UPLOAD_DIR), exist_ok=True)
-
-app.mount(
-    "/api/images",
-    StaticFiles(directory=str(UPLOAD_DIR)),
-    name="uploads",
-)
-
-
 # ===================== STATIC FILES: FRONTEND =====================
 # Mount the entire frontend directory at "/" (root).
 # html=True means index.html is served automatically when
