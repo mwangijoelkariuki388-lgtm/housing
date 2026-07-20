@@ -52,7 +52,8 @@ class SupabaseClient:
             },
         )
         resp.raise_for_status()
-        return resp.json()
+        result = resp.json()
+        return result[0] if isinstance(result, list) and result else result
 
     async def update(self, table, data, filters):
         http = await _get_http()
