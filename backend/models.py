@@ -1,7 +1,7 @@
 LISTINGS_COLUMNS = [
     "id", "title", "description", "price", "city", "area",
     "latitude", "longitude", "listing_type", "amenities", "images",
-    "verified", "landlord_name", "landlord_phone", "owner_id",
+    "verified", "available", "landlord_name", "landlord_phone", "owner_id",
     "created_at", "updated_at",
 ]
 
@@ -13,3 +13,5 @@ USERS_COLUMNS = [
 ]
 
 FAVORITES_COLUMNS = ["id", "user_id", "listing_id", "created_at"]
+
+ENQUIRIES_COLUMNS = ["id", "listing_id", "student_name", "student_phone", "message", "created_at"]

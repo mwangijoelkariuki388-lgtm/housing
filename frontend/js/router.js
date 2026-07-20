@@ -41,7 +41,7 @@ async function router() {
                 AppState.currentArea = params.area || null;
                 AppState.filters.search = params.search || null;
 
-                const browseParams = { city: 'Embu', verified: 'true' };
+                const browseParams = { city: 'Embu', verified: 'true', available: 'true' };
                 if (AppState.currentArea) browseParams.area = AppState.currentArea;
                 if (AppState.filters.search) browseParams.search = AppState.filters.search;
                 if (AppState.filters.listing_type) browseParams.listing_type = AppState.filters.listing_type;
@@ -117,6 +117,16 @@ async function router() {
                 app.innerHTML = renderFavorites();
                 break;
 
+            case '/inbox':
+                if (!AppState.isLoggedIn || AppState.userRole !== 'landlord') {
+                    navigate('#/login');
+                    break;
+                }
+                const enquiries = await apiGetLandlordEnquiries();
+                AppState.enquiries = enquiries;
+                app.innerHTML = renderInbox();
+                break;
+
             case '/about':
                 app.innerHTML = renderAbout();
                 break;
@@ -135,10 +145,12 @@ async function router() {
                 } else {
                     const allListings = await apiGetListings();
                     const allAreas = await apiGetAreas();
-                    const allUsers = await apiGetUsers(AppState.adminPassword);
+                    const allUsers = await apiGetUsers(AppState.adminPassword || 'admin123');
+                    const landlords = await apiGetLandlords();
                     AppState.listings = allListings;
                     AppState.areas = allAreas;
                     AppState.allUsers = allUsers;
+                    AppState.landlords = landlords;
                     app.innerHTML = renderAdmin();
                 }
                 break;
@@ -202,6 +214,7 @@ function updateNav() {
             container.innerHTML = `
                 <span style="color:#2E7D32;font-weight:600;font-size:0.9rem;">${AppState.currentUser.full_name}</span>
                 <a href="#/my-listings" onclick="navigate('#/my-listings')">My Listings</a>
+                <a href="#/inbox" onclick="navigate('#/inbox')">Inbox</a>
                 <a href="#/logout" onclick="navigate('#/logout')">Logout</a>
             `;
         } else {
@@ -470,18 +483,28 @@ async function deleteArea(id) {
     }
 }
 
-function adminLogin() {
+async function adminLogin() {
     const input = document.getElementById('admin-login-password');
     const error = document.getElementById('admin-login-error');
     const pw = input ? input.value : '';
 
-    if (pw === AppState.adminPassword) {
-        AppState.adminLoggedIn = true;
-        localStorage.setItem('admin_logged_in', 'true');
-        navigate('#/jadmin');
-    } else {
+    if (!pw) {
         if (error) {
-            error.textContent = 'Incorrect password. Try again.';
+            error.textContent = 'Please enter the admin password.';
+            error.style.display = 'block';
+        }
+        return;
+    }
+
+    try {
+        const res = await apiAdminLogin(pw);
+        AppState.adminToken = res.access_token;
+        AppState.adminLoggedIn = true;
+        localStorage.setItem('admin_token', res.access_token);
+        navigate('#/jadmin');
+    } catch (err) {
+        if (error) {
+            error.textContent = err.message;
             error.style.display = 'block';
         }
         if (input) {
@@ -493,7 +516,8 @@ function adminLogin() {
 
 function adminLogout() {
     AppState.adminLoggedIn = false;
-    localStorage.setItem('admin_logged_in', 'false');
+    AppState.adminToken = null;
+    localStorage.removeItem('admin_token');
     navigate('#/');
 }
 
@@ -508,7 +532,7 @@ async function adminResetPassword() {
     }
 
     try {
-        await apiResetPassword(userId, newPassword, AppState.adminPassword);
+        await apiResetPassword(userId, newPassword, AppState.adminPassword || 'admin123');
         resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle" style="color:#2E7D32;"></i> Password reset successfully. Share the new password with the user.</div>';
         document.getElementById('reset-new-password').value = '';
         document.getElementById('reset-user-id').value = '';
@@ -517,31 +541,46 @@ async function adminResetPassword() {
     }
 }
 
-function changePassword() {
-    const currentPw = document.getElementById('admin-current-password').value;
-    const newPw = document.getElementById('admin-new-password').value;
-    const confirmPw = document.getElementById('admin-confirm-password').value;
-    const result = document.getElementById('admin-password-result');
+async function adminAddListing() {
+    const resultDiv = document.getElementById('admin-add-result');
+    const btn = document.querySelector('#admin-add-listing-form button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
 
-    if (currentPw !== AppState.adminPassword) {
-        result.innerHTML = '<div class="alert alert-error">Current password is incorrect.</div>';
-        return;
-    }
-    if (!newPw || newPw.length < 4) {
-        result.innerHTML = '<div class="alert alert-error">New password must be at least 4 characters.</div>';
-        return;
-    }
-    if (newPw !== confirmPw) {
-        result.innerHTML = '<div class="alert alert-error">New passwords do not match.</div>';
-        return;
-    }
+    try {
+        const formData = new FormData();
+        formData.append('title', document.getElementById('admin-add-title').value.trim());
+        formData.append('price', document.getElementById('admin-add-price').value);
+        formData.append('city', 'Embu');
+        formData.append('area', document.getElementById('admin-add-area').value);
+        formData.append('listing_type', document.getElementById('admin-add-type').value);
+        formData.append('amenities', document.getElementById('admin-add-amenities').value.trim());
+        formData.append('landlord_name', document.getElementById('admin-add-landlord-name').value.trim());
+        formData.append('landlord_phone', document.getElementById('admin-add-landlord-phone').value.trim());
 
-    AppState.adminPassword = newPw;
-    localStorage.setItem('admin_password', newPw);
-    document.getElementById('admin-current-password').value = '';
-    document.getElementById('admin-new-password').value = '';
-    document.getElementById('admin-confirm-password').value = '';
-    result.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle" style="color:#2E7D32;"></i> Password updated successfully.</div>';
+        const ownerId = document.getElementById('admin-add-owner-id').value;
+        if (ownerId) {
+            formData.append('owner_id', ownerId);
+        }
+
+        const fileInput = document.getElementById('admin-add-images');
+        if (!fileInput.files.length) {
+            throw new Error('At least one photo is required.');
+        }
+        for (const file of fileInput.files) {
+            formData.append('images', file);
+        }
+
+        await apiCreateListing(formData);
+        resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle" style="color:#2E7D32;"></i> Listing created successfully! It will appear after verification.</div>';
+        document.getElementById('admin-add-listing-form').reset();
+        router();
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Listing';
+    }
 }
 
 async function editMyListing(id) {
@@ -589,6 +628,17 @@ async function deleteMyListing(id) {
         router();
     } catch (err) {
         alert('Error: ' + err.message);
+    }
+}
+
+async function toggleAvailable(id, currentAvailable) {
+    try {
+        await apiUpdateListing(id, { available: currentAvailable === false ? true : false });
+        const myListings = await apiGetListings({ owner_id: AppState.currentUser.id });
+        AppState.listings = myListings;
+        router();
+    } catch (err) {
+        alert('Error toggling availability: ' + err.message);
     }
 }
 

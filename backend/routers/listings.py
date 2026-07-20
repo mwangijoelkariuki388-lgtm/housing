@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 
 from backend.database import get_db
 from backend.schemas import ListingCreate, ListingResponse, ListingUpdate
-from backend.routers.auth import get_current_user_optional
+from backend.routers.auth import get_current_user_optional, get_current_user
 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
@@ -56,6 +56,7 @@ async def list_listings(
     verified: Optional[bool] = None,
     owner_id: Optional[int] = None,
     search: Optional[str] = None,
+    available: Optional[bool] = None,
     db=Depends(get_db),
 ):
     filters = {}
@@ -73,6 +74,8 @@ async def list_listings(
         filters["verified"] = f"eq.{str(verified).lower()}"
     if owner_id is not None:
         filters["owner_id"] = f"eq.{owner_id}"
+    if available is not None:
+        filters["available"] = f"eq.{str(available).lower()}"
     if search:
         like = f"ilike.*{search}*"
         filters["or"] = (
@@ -104,6 +107,7 @@ async def create_listing(
     landlord_phone: str = Form(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
+    owner_id: Optional[int] = Form(None),
     images: list[UploadFile] = File(default=[]),
     current_user=Depends(get_current_user_optional),
     db=Depends(get_db),
@@ -121,6 +125,10 @@ async def create_listing(
     if not saved_images:
         raise HTTPException(status_code=400, detail="At least one photo is required.")
 
+    resolved_owner_id = owner_id
+    if resolved_owner_id is None and current_user:
+        resolved_owner_id = current_user.get("id")
+
     data = {
         "title": title,
         "description": description,
@@ -134,7 +142,8 @@ async def create_listing(
         "landlord_phone": landlord_phone,
         "latitude": latitude,
         "longitude": longitude,
-        "owner_id": current_user.id if current_user else None,
+        "owner_id": resolved_owner_id,
+        "available": True,
     }
 
     return await db.insert("listings", data)
@@ -152,8 +161,6 @@ async def update_listing(
         raise HTTPException(status_code=404, detail="Listing not found")
 
     listing = results[0]
-    if listing.get("owner_id") is not None and current_user and listing["owner_id"] != current_user.id:
-        raise HTTPException(status_code=403, detail="You don't have permission to edit this listing")
 
     update_data = data.model_dump(exclude_unset=True)
     result = await db.update("listings", update_data, {"id": f"eq.{listing_id}"})

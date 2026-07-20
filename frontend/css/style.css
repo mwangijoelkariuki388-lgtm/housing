@@ -830,6 +830,19 @@ header nav a:hover { text-decoration: underline; }
     background: #fffde7 !important;
 }
 
+.rented-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #c62828;
+    color: white;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 1;
+}
+
 .admin-role-badge {
     display: inline-block;
     padding: 0.2rem 0.5rem;

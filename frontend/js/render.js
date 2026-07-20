@@ -18,7 +18,10 @@ function renderCard(listing) {
         ? ''
         : '<div class="placeholder-img"><i class="fas fa-home" style="font-size:2rem;color:#fff;"></i></div>';
     const verified = listing.verified
-        ? '<span class="verified-badge">✓ Verified</span>'
+        ? '<span class="verified-badge">\u2713 Verified</span>'
+        : '';
+    const available = listing.available === false
+        ? '<span class="rented-badge">Rented</span>'
         : '';
     const typeLabel = {
         bedsit: 'Bedsit',
@@ -41,6 +44,7 @@ function renderCard(listing) {
                 ${favHeart}
                 ${imgContent}
                 ${verified}
+                ${available}
             </div>
             <div class="card-content">
                 <div class="price">KSh ${listing.price.toLocaleString()} / month</div>
@@ -183,7 +187,7 @@ function renderDetail() {
         ? ''
         : '<div class="placeholder-img"><i class="fas fa-home" style="font-size:3rem;color:#fff;"></i></div>';
     const verified = l.verified
-        ? '<span class="verified-badge" style="font-size:0.85rem;">✓ Verified</span>'
+        ? '<span class="verified-badge" style="font-size:0.85rem;">\u2713 Verified</span>'
         : '';
 
     const typeLabel = {
@@ -198,6 +202,10 @@ function renderDetail() {
         : '<p style="color:#888;">No amenities listed.</p>';
 
     const description = l.description || 'No description provided.';
+
+    const shareUrl = encodeURIComponent(window.location.href);
+    const shareText = encodeURIComponent(`Check out this room in ${l.area}: ${l.title} - KSh ${l.price.toLocaleString()}/month`);
+    const shareWhatsApp = `https://wa.me/?text=${shareText}%20${shareUrl}`;
 
     const contactForm = AppState.isLoggedIn ? `
         <div class="contact-section">
@@ -237,7 +245,10 @@ function renderDetail() {
                 <div class="detail-body">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
                         <div class="price">KSh ${l.price.toLocaleString()} / month</div>
-                        ${AppState.isLoggedIn ? `<button class="btn btn-sm ${isFavorited(l.id) ? 'btn-primary' : ''}" onclick="toggleFavorite(${l.id})" style="font-size:1rem;">${isFavorited(l.id) ? '<i class="fas fa-heart"></i> Saved' : '<i class="far fa-heart"></i> Save'}</button>` : ''}
+                        <div style="display:flex;gap:0.5rem;">
+                            <a href="${shareWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background:#25D366;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem;"><i class="fab fa-whatsapp"></i> Share</a>
+                            ${AppState.isLoggedIn ? `<button class="btn btn-sm ${isFavorited(l.id) ? 'btn-primary' : ''}" onclick="toggleFavorite(${l.id})" style="font-size:1rem;">${isFavorited(l.id) ? '<i class="fas fa-heart"></i> Saved' : '<i class="far fa-heart"></i> Save'}</button>` : ''}
+                        </div>
                     </div>
                     <div class="title">${l.title}</div>
                     <div class="location"><i class="fas fa-map-marker-alt" style="color:#e74c3c;"></i> ${l.area}, ${l.city} ${verified}</div>
@@ -245,6 +256,7 @@ function renderDetail() {
                         <div class="meta-item"><div class="label">Type</div><div class="value">${typeLabel}</div></div>
                         <div class="meta-item"><div class="label">Landlord</div><div class="value">${l.landlord_name}</div></div>
                         <div class="meta-item"><div class="label">Listed</div><div class="value">${new Date(l.created_at).toLocaleDateString()}</div></div>
+                        <div class="meta-item"><div class="label">Status</div><div class="value">${l.available === false ? '<span style="color:#c62828;">Rented</span>' : '<span style="color:#2E7D32;">Available</span>'}</div></div>
                     </div>
                     <div class="description">${description}</div>
                     <h4 style="margin-bottom:0.5rem;">Amenities</h4>
@@ -416,7 +428,7 @@ function renderAbout() {
                         <i class="fab fa-whatsapp" style="font-size:1.3rem;"></i> Chat with us on WhatsApp
                     </a>
                 </p>
-                <p style="margin-top:0.8rem;font-size:0.85rem;color:#888;">Our team is available Monday–Saturday, 8 AM – 6 PM. We typically respond within a few hours.</p>
+                <p style="margin-top:0.8rem;font-size:0.85rem;color:#888;">Our team is available Monday\u2013Saturday, 8 AM \u2013 6 PM. We typically respond within a few hours.</p>
             </div>
         </div>
     `;
@@ -583,6 +595,80 @@ function renderAdminResetPassword() {
     `;
 }
 
+function renderAdminAddListing() {
+    const landlords = AppState.landlords || [];
+    const landlordOptions = landlords.length
+        ? `<option value="">No owner (general listing)</option>
+            ${landlords.map(l => `<option value="${l.id}">${l.full_name} (${l.email})</option>`).join('')}`
+        : '<option value="">No landlords registered yet</option>';
+
+    return `
+        <div class="admin-section">
+            <h3><i class="fas fa-plus-circle" style="color:#2E7D32;"></i> Add Listing on Behalf of Landlord</h3>
+            <p class="admin-hint">Use this form to create a listing for a landlord in person. Photos are required.</p>
+            <form id="admin-add-listing-form" onsubmit="event.preventDefault(); adminAddListing()" style="max-width:600px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Landlord (optional)</label>
+                        <select id="admin-add-owner-id">
+                            ${landlordOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Area *</label>
+                        <select id="admin-add-area" required>
+                            <option value="">Select area...</option>
+                            ${getAreaOptions()}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" id="admin-add-title" required placeholder="e.g. Modern Bedsit in Gakwegori">
+                    </div>
+                    <div class="form-group">
+                        <label>Price (KSh) *</label>
+                        <input type="number" id="admin-add-price" required min="1" placeholder="e.g. 4500">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type *</label>
+                        <select id="admin-add-type" required>
+                            <option value="">Select type...</option>
+                            <option value="bedsit">Bedsit</option>
+                            <option value="single_room">Single Room</option>
+                            <option value="one_bedroom">1-Bedroom</option>
+                            <option value="hostel">Hostel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amenities</label>
+                        <input type="text" id="admin-add-amenities" placeholder="e.g. Wi-Fi, Water, Security">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Landlord Name *</label>
+                        <input type="text" id="admin-add-landlord-name" required placeholder="e.g. Jane Wanjiku">
+                    </div>
+                    <div class="form-group">
+                        <label>Landlord Phone *</label>
+                        <input type="tel" id="admin-add-landlord-phone" required placeholder="e.g. 0712345678">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Photos *</label>
+                    <input type="file" id="admin-add-images" accept="image/*" multiple required>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Listing</button>
+                <div id="admin-add-result" style="margin-top:0.5rem;"></div>
+            </form>
+        </div>
+    `;
+}
+
 function renderAdmin() {
     const listings = AppState.listings;
     const areas = AppState.areas;
@@ -616,10 +702,6 @@ function renderAdmin() {
         </div>
     `;
 
-    const areaBadges = areas.length
-        ? areas.map(a => `<span class="admin-area-badge">${a.name}: ${a.count}</span>`).join('')
-        : '<span style="color:#888;">No areas found.</span>';
-
     const areaManagementHtml = `
         <div class="admin-section">
             <h3>Manage Areas</h3>
@@ -640,19 +722,6 @@ function renderAdmin() {
                 <button type="submit" class="btn btn-primary btn-sm">Add Area</button>
             </form>
             <div id="admin-area-result" style="margin-top:0.5rem;"></div>
-        </div>
-    `;
-
-    const changePasswordHtml = `
-        <div class="admin-section">
-            <h3>Change Password</h3>
-            <form id="admin-change-password-form" onsubmit="event.preventDefault(); changePassword()" style="display:flex;flex-direction:column;gap:0.5rem;max-width:400px;">
-                <input type="password" id="admin-current-password" placeholder="Current password" required style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
-                <input type="password" id="admin-new-password" placeholder="New password" required style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
-                <input type="password" id="admin-confirm-password" placeholder="Confirm new password" required style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
-                <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
-                <div id="admin-password-result" style="margin-top:0.5rem;"></div>
-            </form>
         </div>
     `;
 
@@ -733,6 +802,9 @@ function renderAdmin() {
             const verifiedLabel = l.verified
                 ? '<span style="color:#2E7D32;font-weight:600;"><i class="fas fa-check" style="color:#2E7D32;"></i> Yes</span>'
                 : '<span style="color:#999;"><i class="fas fa-times" style="color:#999;"></i> No</span>';
+            const availableLabel = l.available === false
+                ? '<span style="color:#c62828;">Rented</span>'
+                : '<span style="color:#2E7D32;">Available</span>';
             return `
                 <tr class="${rowClass}">
                     <td>${l.id}</td>
@@ -742,6 +814,7 @@ function renderAdmin() {
                     <td>${l.listing_type}</td>
                     <td>${l.landlord_name}</td>
                     <td>${l.landlord_phone}</td>
+                    <td>${availableLabel}</td>
                     <td>${verifiedLabel}</td>
                     <td class="admin-actions">
                         <button class="btn btn-sm" onclick="navigate('#/listing/${l.id}')"><i class="fas fa-eye"></i> View</button>
@@ -754,7 +827,7 @@ function renderAdmin() {
                 </tr>
             `;
         }).join('')
-        : '<tr><td colspan="9" style="text-align:center;color:#888;">No listings found.</td></tr>';
+        : '<tr><td colspan="10" style="text-align:center;color:#888;">No listings found.</td></tr>';
 
     return `
         <div class="admin-container">
@@ -767,9 +840,9 @@ function renderAdmin() {
             </div>
             ${statsHtml}
             ${renderAdminUsers()}
+            ${renderAdminAddListing()}
             ${areaManagementHtml}
             ${renderAdminResetPassword()}
-            ${changePasswordHtml}
             ${editFormHtml}
             <div class="admin-table-wrapper">
                 <table class="admin-table">
@@ -782,6 +855,7 @@ function renderAdmin() {
                             <th>Type</th>
                             <th>Landlord</th>
                             <th>Phone</th>
+                            <th>Status</th>
                             <th>Verified</th>
                             <th>Actions</th>
                         </tr>
@@ -800,6 +874,9 @@ function renderMyListings() {
             const verifiedBadge = l.verified
                 ? '<span style="color:#2E7D32;font-weight:600;"><i class="fas fa-check-circle" style="color:#2E7D32;"></i> Verified</span>'
                 : '<span style="color:#999;">Pending verification</span>';
+            const availableBadge = l.available === false
+                ? '<span style="color:#c62828;font-weight:600;">Rented</span>'
+                : '<span style="color:#2E7D32;font-weight:600;">Available</span>';
             return `
                 <tr>
                     <td>${l.id}</td>
@@ -808,15 +885,19 @@ function renderMyListings() {
                     <td>KSh ${l.price.toLocaleString()}</td>
                     <td>${l.listing_type}</td>
                     <td>${verifiedBadge}</td>
+                    <td>${availableBadge}</td>
                     <td class="admin-actions">
                         <button class="btn btn-sm" onclick="navigate('#/listing/${l.id}')"><i class="fas fa-eye"></i> View</button>
                         <button class="btn btn-sm" onclick="editMyListing(${l.id})"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-sm ${l.available === false ? 'btn-primary' : 'btn-warning'}" onclick="toggleAvailable(${l.id}, ${l.available})">
+                            ${l.available === false ? 'Mark Available' : 'Mark Rented'}
+                        </button>
                         <button class="btn btn-sm btn-danger" onclick="deleteMyListing(${l.id})"><i class="fas fa-trash"></i> Delete</button>
                     </td>
                 </tr>
             `;
         }).join('')
-        : '<tr><td colspan="7" style="text-align:center;color:#888;">You haven\'t listed any rooms yet.</td></tr>';
+        : '<tr><td colspan="8" style="text-align:center;color:#888;">You haven\'t listed any rooms yet.</td></tr>';
 
     const editId = AppState.editingListingId;
     const editListing = editId ? listings.find(l => l.id === editId) : null;
@@ -868,10 +949,13 @@ function renderMyListings() {
         <div class="admin-container">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
                 <h2>My Listings</h2>
-                <a href="#/add" class="btn btn-primary" onclick="navigate('#/add')">+ Add New Listing</a>
+                <div style="display:flex;gap:0.5rem;">
+                    <a href="#/inbox" class="btn btn-sm" style="background:#25D366;color:white;text-decoration:none;"><i class="fas fa-inbox"></i> Inbox</a>
+                    <a href="#/add" class="btn btn-primary btn-sm" onclick="navigate('#/add')">+ Add New Listing</a>
+                </div>
             </div>
             <div class="admin-section" style="margin-top:1rem;">
-                <p style="color:#666;">Manage your rental listings below. New listings start as "Pending verification" until an admin approves them.</p>
+                <p style="color:#666;">Manage your rental listings below. New listings start as "Pending verification" until an admin approves them. Mark a listing as "Rented" to hide it from public view.</p>
             </div>
             ${editFormHtml}
             <div class="admin-table-wrapper" style="margin-top:1rem;">
@@ -883,8 +967,50 @@ function renderMyListings() {
                             <th>Area</th>
                             <th>Price</th>
                             <th>Type</th>
+                            <th>Verification</th>
                             <th>Status</th>
                             <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderInbox() {
+    const enquiries = AppState.enquiries || [];
+    const rows = enquiries.length
+        ? enquiries.map(e => `
+            <tr>
+                <td>${e.listing_title}</td>
+                <td>${e.student_name}</td>
+                <td><a href="https://wa.me/${e.student_phone.replace(/^0/, '254')}" target="_blank" rel="noopener noreferrer" style="color:#25D366;"><i class="fab fa-whatsapp"></i> ${e.student_phone}</a></td>
+                <td>${e.message || '-'}</td>
+                <td>${new Date(e.created_at).toLocaleDateString()} ${new Date(e.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="5" style="text-align:center;color:#888;">No enquiries yet. Students will see your contact details on listings and can send you enquiries here.</td></tr>';
+
+    return `
+        <div class="admin-container">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <h2><i class="fas fa-inbox"></i> Inbox</h2>
+                <a href="#/my-listings" class="btn btn-sm" onclick="navigate('#/my-listings')"><i class="fas fa-arrow-left"></i> Back to My Listings</a>
+            </div>
+            <div class="admin-section" style="margin-top:1rem;">
+                <p style="color:#666;">Enquiries from students interested in your listings. Contact them directly via WhatsApp to close the deal.</p>
+            </div>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Listing</th>
+                            <th>Student Name</th>
+                            <th>Phone</th>
+                            <th>Message</th>
+                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>

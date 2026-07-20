@@ -77,6 +77,52 @@ async def get_current_user(
     return results[0]
 
 
+async def get_current_admin(
+    request: Request,
+    db=Depends(get_db),
+):
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = auth.split(" ")[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        role = payload.get("role")
+        if role != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        user_id = int(payload.get("sub"))
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    results = await db.select("users", filters={"id": f"eq.{user_id}"})
+    if not results:
+        raise HTTPException(status_code=401, detail="User not found")
+    return results[0]
+
+
+@router.post("/admin-login")
+async def admin_login(data: dict, db=Depends(get_db)):
+    admin_key = data.get("admin_key", "")
+    if admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    results = await db.select("users", filters={"role": f"eq.admin"})
+    if results:
+        admin_user = results[0]
+    else:
+        admin_user = await db.insert("users", {
+            "email": "admin@keja-go.co.ke",
+            "password_hash": hash_password(ADMIN_KEY),
+            "full_name": "Admin",
+            "phone": "",
+            "role": "admin",
+            "id_number": None,
+        })
+
+    token = create_access_token({"sub": str(admin_user["id"]), "role": "admin"})
+    return {"access_token": token, "token_type": "bearer", "user": admin_user}
+
+
 @router.post("/reset-password")
 async def admin_reset_password(data: AdminResetPassword, db=Depends(get_db)):
     if data.admin_key != ADMIN_KEY:
@@ -136,11 +182,29 @@ async def login(data: UserLogin, db=Depends(get_db)):
 
 @router.get("/users")
 async def list_users(request: Request, db=Depends(get_db)):
-    if request.headers.get("X-Admin-Key", "") != ADMIN_KEY:
-        raise HTTPException(status_code=403, detail="Invalid admin key")
-    return await db.select("users", columns="id,email,full_name,phone,role")
+    auth = request.headers.get("X-Admin-Key", "")
+    if auth == ADMIN_KEY:
+        pass
+    else:
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=403, detail="Invalid admin key")
+        token = auth_header.split(" ")[1]
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            if payload.get("role") != "admin":
+                raise HTTPException(status_code=403, detail="Admin access required")
+        except JWTError:
+            raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    return await db.select("users", columns="id,email,full_name,phone,role,created_at")
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user=Depends(get_current_user)):
     return current_user
+
+
+@router.get("/landlords")
+async def list_landlords(request: Request, db=Depends(get_db)):
+    return await db.select("users", filters={"role": f"eq.landlord"}, columns="id,email,full_name,phone")

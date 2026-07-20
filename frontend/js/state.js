@@ -5,9 +5,11 @@ const AppState = {
     areas: [],
     editingListingId: null,
     allUsers: [],
+    enquiries: [],
+    landlords: [],
 
-    adminLoggedIn: localStorage.getItem('admin_logged_in') === 'true',
-    adminPassword: localStorage.getItem('admin_password') || 'admin123',
+    adminToken: localStorage.getItem('admin_token'),
+    adminLoggedIn: !!localStorage.getItem('admin_token'),
 
     authToken: localStorage.getItem('auth_token'),
     currentUser: null,

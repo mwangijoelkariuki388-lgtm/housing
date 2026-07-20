@@ -6,6 +6,8 @@ async function apiFetch(path, options = {}) {
 
     if (AppState.authToken) {
         headers['Authorization'] = `Bearer ${AppState.authToken}`;
+    } else if (AppState.adminToken && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${AppState.adminToken}`;
     }
 
     const res = await fetch(url, { headers, ...options });
@@ -28,6 +30,8 @@ function apiGetListings(params = {}) {
     if (params.listing_type) qs.set('listing_type', params.listing_type);
     if (params.verified) qs.set('verified', params.verified);
     if (params.search) qs.set('search', params.search);
+    if (params.owner_id) qs.set('owner_id', params.owner_id);
+    if (params.available !== undefined) qs.set('available', params.available);
 
     const query = qs.toString();
     return apiFetch(`/listings${query ? '?' + query : ''}`);
@@ -131,8 +135,32 @@ function apiResetPassword(userId, newPassword, adminKey) {
     });
 }
 
+function apiAdminLogin(adminKey) {
+    return apiFetch('/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_key: adminKey }),
+    });
+}
+
+function apiGetLandlordEnquiries() {
+    return apiFetch('/contact/landlord-enquiries');
+}
+
+function apiGetLandlords() {
+    return apiFetch('/auth/landlords');
+}
+
 function imageUrl(filename) {
     if (!filename) return '';
     if (filename.startsWith('http')) return filename;
     return `https://abwrnzlzuaswcppmhggi.supabase.co/storage/v1/object/public/listing-images/${filename}`;
+}
+
+async function apiFetchWithAdmin(path, options = {}) {
+    const headers = { ...options.headers };
+    if (AppState.adminToken) {
+        headers['Authorization'] = `Bearer ${AppState.adminToken}`;
+    }
+    return apiFetch(path, { ...options, headers });
 }

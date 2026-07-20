@@ -27,6 +27,7 @@ class ListingUpdate(BaseModel):
     landlord_name: Optional[str] = None
     landlord_phone: Optional[str] = None
     verified: Optional[bool] = None
+    available: Optional[bool] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -42,6 +43,7 @@ class ListingResponse(BaseModel):
     amenities: str
     images: str
     verified: bool
+    available: bool = True
     landlord_name: str
     landlord_phone: str
     owner_id: Optional[int] = None
@@ -119,3 +121,13 @@ class ContactRequest(BaseModel):
     student_name: str
     student_phone: str
     message: str = ""
+
+
+class EnquiryResponse(BaseModel):
+    id: int
+    listing_id: int
+    listing_title: str = ""
+    student_name: str
+    student_phone: str
+    message: str
+    created_at: datetime
