@@ -320,6 +320,9 @@ async function handleLogin() {
 
     try {
         const res = await apiLogin({ email, password });
+        AppState.adminLoggedIn = false;
+        AppState.adminToken = null;
+        localStorage.removeItem('admin_token');
         AppState.authToken = res.access_token;
         AppState.currentUser = res.user;
         AppState.isLoggedIn = true;
@@ -367,6 +370,9 @@ async function handleRegister() {
             id_number: role === 'landlord' ? idNumber : null,
         };
         const res = await apiRegister(data);
+        AppState.adminLoggedIn = false;
+        AppState.adminToken = null;
+        localStorage.removeItem('admin_token');
         AppState.authToken = res.access_token;
         AppState.currentUser = res.user;
         AppState.isLoggedIn = true;
@@ -381,7 +387,14 @@ async function handleRegister() {
 }
 
 async function restoreSession() {
-    if (!AppState.authToken) return;
+    if (!AppState.authToken) {
+        const adminToken = localStorage.getItem('admin_token');
+        if (adminToken) {
+            AppState.adminToken = adminToken;
+            AppState.adminLoggedIn = true;
+        }
+        return;
+    }
     try {
         const user = await apiGetMe();
         AppState.currentUser = user;
@@ -504,6 +517,12 @@ async function adminLogin() {
 
     try {
         const res = await apiAdminLogin(pw);
+        AppState.isLoggedIn = false;
+        AppState.userRole = null;
+        AppState.currentUser = null;
+        AppState.authToken = null;
+        AppState.favoriteIds = new Set();
+        localStorage.removeItem('auth_token');
         AppState.adminToken = res.access_token;
         AppState.adminLoggedIn = true;
         localStorage.setItem('admin_token', res.access_token);
@@ -524,7 +543,13 @@ function adminLogout() {
     AppState.adminLoggedIn = false;
     AppState.adminToken = null;
     localStorage.removeItem('admin_token');
-    navigate('#/');
+    const savedToken = localStorage.getItem('auth_token');
+    if (savedToken) {
+        AppState.authToken = savedToken;
+        restoreSession().then(() => { updateNav(); router(); });
+    } else {
+        navigate('#/');
+    }
 }
 
 async function adminResetPassword() {
