@@ -119,7 +119,10 @@ async def create_listing(
         ext = os.path.splitext(img.filename)[1] if img.filename else ".jpg"
         filename = f"{uuid.uuid4().hex}{ext}"
         content = await img.read()
-        storage_upload(filename, content)
+        try:
+            storage_upload(filename, content)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)[:100]}")
         saved_images.append(filename)
 
     if not saved_images:

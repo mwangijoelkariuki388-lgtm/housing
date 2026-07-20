@@ -507,7 +507,7 @@ async function adminLogin() {
         AppState.adminToken = res.access_token;
         AppState.adminLoggedIn = true;
         localStorage.setItem('admin_token', res.access_token);
-        navigate('#/jadmin');
+        router();
     } catch (err) {
         if (error) {
             error.textContent = err.message;

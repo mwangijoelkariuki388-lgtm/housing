@@ -42,13 +42,20 @@ function apiGetListing(id) {
 }
 
 async function apiCreateListing(formData) {
+    const headers = {};
+    if (AppState.authToken) {
+        headers['Authorization'] = `Bearer ${AppState.authToken}`;
+    }
     const res = await fetch(`${API_BASE}/listings`, {
         method: 'POST',
         body: formData,
+        headers,
     });
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || 'Failed to create listing');
+        const text = await res.text().catch(() => 'Unknown error');
+        let detail;
+        try { detail = JSON.parse(text).detail; } catch { detail = text; }
+        throw new Error(detail || 'Failed to create listing');
     }
     return res.json();
 }

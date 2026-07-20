@@ -24,7 +24,7 @@ function renderCard(listing) {
         ? '<span class="rented-badge">Rented</span>'
         : '';
     const typeLabel = {
-        bedsit: 'Bedsit',
+        bedsit: 'Bedsitter',
         single_room: 'Single Room',
         one_bedroom: '1-Bedroom',
         hostel: 'Hostel',
@@ -77,7 +77,7 @@ function renderHome() {
     return `
         <section class="hero">
             <h2>Find Student Housing Near University of Embu</h2>
-            <p>Verified bedsits, single rooms, and apartments in Embu town and surrounding areas.</p>
+            <p>Verified bedsitter units, single rooms, and apartments in Embu town and surrounding areas.</p>
             <div class="search-container">
                 <input type="text" id="home-search" placeholder="Search by area or estate name..." onkeydown="if(event.key==='Enter') doHomeSearch()">
                 <button onclick="doHomeSearch()">Search</button>
@@ -124,7 +124,7 @@ function renderBrowse() {
     const typeDropdown = `
         <select class="filter-select" onchange="setFilter('listing_type', this.value)">
             <option value="" ${!activeType ? 'selected' : ''}>All Types</option>
-            <option value="bedsit" ${activeType === 'bedsit' ? 'selected' : ''}>Bedsits</option>
+            <option value="bedsit" ${activeType === 'bedsit' ? 'selected' : ''}>Bedsitters</option>
             <option value="single_room" ${activeType === 'single_room' ? 'selected' : ''}>Single Rooms</option>
             <option value="one_bedroom" ${activeType === 'one_bedroom' ? 'selected' : ''}>1-Bedroom</option>
             <option value="hostel" ${activeType === 'hostel' ? 'selected' : ''}>Hostels</option>
@@ -191,7 +191,7 @@ function renderDetail() {
         : '';
 
     const typeLabel = {
-        bedsit: 'Bedsit',
+        bedsit: 'Bedsitter',
         single_room: 'Single Room',
         one_bedroom: '1-Bedroom',
         hostel: 'Hostel',
@@ -322,7 +322,7 @@ function renderAddListing() {
                         <label>Type *</label>
                         <select id="add-type" required>
                             <option value="">Select type...</option>
-                            <option value="bedsit">Bedsit</option>
+                            <option value="bedsit">Bedsitter</option>
                             <option value="single_room">Single Room</option>
                             <option value="one_bedroom">1-Bedroom</option>
                             <option value="hostel">Hostel</option>
@@ -334,9 +334,10 @@ function renderAddListing() {
                     <input type="text" id="add-amenities" placeholder="e.g. Wi-Fi, Inside Water, Gated Security">
                 </div>
                 <div class="form-group">
-                    <label>Location on Map <span style="font-weight:normal;color:#888;">(click the map to pin)</span></label>
+                    <label>Location on Map <span style="font-weight:normal;color:#888;">(click the map or use your location)</span></label>
                     <div id="add-map" style="height:250px;border-radius:6px;border:1px solid #ddd;margin-bottom:0.3rem;"></div>
-                    <p id="add-coords-display" style="font-size:0.8rem;color:#888;"><i class="fas fa-map-marker-alt" style="color:#e74c3c;"></i> Click on the map to pin the exact location of your room.</p>
+                    <p id="add-coords-display" style="font-size:0.8rem;color:#888;"><i class="fas fa-map-marker-alt" style="color:#e74c3c;"></i> Click on the map to pin the exact location.</p>
+                    <button type="button" class="btn btn-sm" onclick="locateMe()" style="margin-top:0.3rem;background:#1565C0;color:white;"><i class="fas fa-crosshairs"></i> Use My Location</button>
                     <input type="hidden" id="add-lat-hidden">
                     <input type="hidden" id="add-lng-hidden">
                 </div>
@@ -633,7 +634,7 @@ function renderAdminAddListing() {
                         <label>Type *</label>
                         <select id="admin-add-type" required>
                             <option value="">Select type...</option>
-                            <option value="bedsit">Bedsit</option>
+                            <option value="bedsit">Bedsitter</option>
                             <option value="single_room">Single Room</option>
                             <option value="one_bedroom">1-Bedroom</option>
                             <option value="hostel">Hostel</option>
@@ -759,7 +760,10 @@ function renderAdmin() {
                         <label>Type</label>
                         <select id="admin-edit-type">
                             ${['bedsit','single_room','one_bedroom','hostel']
-                                .map(t => `<option value="${t}"${t === editListing.listing_type ? ' selected' : ''}>${t.replace('_', ' ')}</option>`).join('')}
+                                .map(t => {
+                                    const labels = {bedsit:'Bedsitter',single_room:'Single Room',one_bedroom:'1-Bedroom',hostel:'Hostel'};
+                                    return `<option value="${t}"${t === editListing.listing_type ? ' selected' : ''}>${labels[t]}</option>`;
+                                }).join('')}
                         </select>
                     </div>
                 </div>
@@ -922,7 +926,10 @@ function renderMyListings() {
                         <label>Type</label>
                         <select id="my-edit-type">
                             ${['bedsit','single_room','one_bedroom','hostel']
-                                .map(t => `<option value="${t}"${t === editListing.listing_type ? ' selected' : ''}>${t.replace('_', ' ')}</option>`).join('')}
+                                .map(t => {
+                                    const labels = {bedsit:'Bedsitter',single_room:'Single Room',one_bedroom:'1-Bedroom',hostel:'Hostel'};
+                                    return `<option value="${t}"${t === editListing.listing_type ? ' selected' : ''}>${labels[t]}</option>`;
+                                }).join('')}
                         </select>
                     </div>
                 </div>
@@ -1049,6 +1056,29 @@ function initDetailMap() {
     setTimeout(() => map.invalidateSize(), 200);
 }
 
+function locateMe() {
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const el = document.getElementById('add-map');
+            if (el && el._leaflet_map) {
+                el._leaflet_map.setView([lat, lng], 16);
+                const clickEvent = { latlng: { lat, lng } };
+                el._leaflet_map.fire('click', clickEvent);
+            }
+        },
+        function(err) {
+            alert('Could not get your location: ' + err.message + '. Click on the map to pin manually.');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
 function initAddMap() {
     const el = document.getElementById('add-map');
     if (!el || el._leaflet_map) return;
@@ -1067,13 +1097,13 @@ function initAddMap() {
     const lngInput = document.getElementById('add-lng-hidden');
     const display = document.getElementById('add-coords-display');
 
-    map.on('click', function(e) {
-        const lat = e.latlng.lat.toFixed(6);
-        const lng = e.latlng.lng.toFixed(6);
+    function placePin(latlng) {
+        const lat = latlng.lat.toFixed(6);
+        const lng = latlng.lng.toFixed(6);
         if (marker) {
-            marker.setLatLng(e.latlng);
+            marker.setLatLng(latlng);
         } else {
-            marker = L.marker(e.latlng, { draggable: true }).addTo(map);
+            marker = L.marker(latlng, { draggable: true }).addTo(map);
             marker.on('dragend', function() {
                 const pos = marker.getLatLng();
                 latInput.value = pos.lat.toFixed(6);
@@ -1084,6 +1114,10 @@ function initAddMap() {
         latInput.value = lat;
         lngInput.value = lng;
         display.innerHTML = '<i class="fas fa-map-marker-alt" style="color:#2E7D32;"></i> Pinned: ' + lat + ', ' + lng;
+    }
+
+    map.on('click', function(e) {
+        placePin(e.latlng);
     });
     el._leaflet_map = map;
     setTimeout(() => map.invalidateSize(), 300);
