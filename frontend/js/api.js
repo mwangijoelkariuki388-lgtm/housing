@@ -117,6 +117,20 @@ function apiRemoveFavorite(listingId) {
     return apiFetch(`/favorites/${listingId}`, { method: 'DELETE' });
 }
 
+function apiGetUsers(adminKey) {
+    return apiFetch('/auth/users', {
+        headers: { 'X-Admin-Key': adminKey },
+    });
+}
+
+function apiResetPassword(userId, newPassword, adminKey) {
+    return apiFetch('/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, new_password: newPassword, admin_key: adminKey }),
+    });
+}
+
 function imageUrl(filename) {
     if (!filename) return '';
     if (filename.startsWith('http')) return filename;

@@ -109,6 +109,12 @@ class CityInfo(BaseModel):
     count: int
 
 
+class AdminResetPassword(BaseModel):
+    user_id: int
+    new_password: str
+    admin_key: str
+
+
 class ContactRequest(BaseModel):
     student_name: str
     student_phone: str

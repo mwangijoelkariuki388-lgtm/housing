@@ -4,6 +4,7 @@ const AppState = {
     listings: [],
     areas: [],
     editingListingId: null,
+    allUsers: [],
 
     adminLoggedIn: localStorage.getItem('admin_logged_in') === 'true',
     adminPassword: localStorage.getItem('admin_password') || 'admin123',

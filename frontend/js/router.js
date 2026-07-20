@@ -135,8 +135,10 @@ async function router() {
                 } else {
                     const allListings = await apiGetListings();
                     const allAreas = await apiGetAreas();
+                    const allUsers = await apiGetUsers(AppState.adminPassword);
                     AppState.listings = allListings;
                     AppState.areas = allAreas;
+                    AppState.allUsers = allUsers;
                     app.innerHTML = renderAdmin();
                 }
                 break;
@@ -493,6 +495,26 @@ function adminLogout() {
     AppState.adminLoggedIn = false;
     localStorage.setItem('admin_logged_in', 'false');
     navigate('#/');
+}
+
+async function adminResetPassword() {
+    const userId = parseInt(document.getElementById('reset-user-id').value);
+    const newPassword = document.getElementById('reset-new-password').value;
+    const resultDiv = document.getElementById('admin-reset-result');
+
+    if (!userId || !newPassword || newPassword.length < 4) {
+        resultDiv.innerHTML = '<div class="alert alert-error">Select a user and enter a password with at least 4 characters.</div>';
+        return;
+    }
+
+    try {
+        await apiResetPassword(userId, newPassword, AppState.adminPassword);
+        resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle" style="color:#2E7D32;"></i> Password reset successfully. Share the new password with the user.</div>';
+        document.getElementById('reset-new-password').value = '';
+        document.getElementById('reset-user-id').value = '';
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+    }
 }
 
 function changePassword() {

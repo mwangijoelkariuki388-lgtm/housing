@@ -6,10 +6,11 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from backend.database import get_db
-from backend.schemas import UserCreate, UserLogin, UserResponse, TokenResponse
+from backend.schemas import UserCreate, UserLogin, UserResponse, TokenResponse, AdminResetPassword
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+ADMIN_KEY = os.getenv("ADMIN_KEY", "admin123")
 SECRET_KEY = os.getenv("JWT_SECRET", "keja-go-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
@@ -76,6 +77,19 @@ async def get_current_user(
     return results[0]
 
 
+@router.post("/reset-password")
+async def admin_reset_password(data: AdminResetPassword, db=Depends(get_db)):
+    if data.admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    user = await db.select("users", filters={"id": f"eq.{data.user_id}"})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await db.update("users", {"password_hash": hash_password(data.new_password)}, {"id": f"eq.{data.user_id}"})
+    return {"success": True, "message": "Password updated successfully"}
+
+
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register(data: UserCreate, db=Depends(get_db)):
     existing = await db.select("users", filters={"email": f"eq.{data.email}"})
@@ -118,6 +132,13 @@ async def login(data: UserLogin, db=Depends(get_db)):
         token_type="bearer",
         user=UserResponse.model_validate(user),
     )
+
+
+@router.get("/users")
+async def list_users(request: Request, db=Depends(get_db)):
+    if request.headers.get("X-Admin-Key", "") != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    return await db.select("users", columns="id,email,full_name,phone,role")
 
 
 @router.get("/me", response_model=UserResponse)

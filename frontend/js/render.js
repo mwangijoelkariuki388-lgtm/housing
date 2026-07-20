@@ -513,6 +513,29 @@ function renderAdminLogin() {
     `;
 }
 
+function renderAdminResetPassword() {
+    const users = AppState.allUsers || [];
+    const options = users.length
+        ? `<option value="">Select a user...</option>
+            ${users.map(u => `<option value="${u.id}">${u.full_name} (${u.email}) — ${u.role}</option>`).join('')}`
+        : '<option value="">No users found</option>';
+
+    return `
+        <div class="admin-section">
+            <h3><i class="fas fa-key" style="color:#e67e22;"></i> Reset User Password</h3>
+            <p class="admin-hint">Select a user and set a new password. Share the new password with them over WhatsApp or phone.</p>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;max-width:400px;">
+                <select id="reset-user-id" style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
+                    ${options}
+                </select>
+                <input type="text" id="reset-new-password" placeholder="New password (at least 4 characters)" required style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
+                <button class="btn btn-primary btn-sm" onclick="adminResetPassword()">Reset Password</button>
+                <div id="admin-reset-result" style="margin-top:0.5rem;"></div>
+            </div>
+        </div>
+    `;
+}
+
 function renderAdmin() {
     const listings = AppState.listings;
     const areas = AppState.areas;
@@ -690,6 +713,7 @@ function renderAdmin() {
             </div>
             ${statsHtml}
             ${areaManagementHtml}
+            ${renderAdminResetPassword()}
             ${changePasswordHtml}
             ${editFormHtml}
             <div class="admin-table-wrapper">
