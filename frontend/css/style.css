@@ -567,6 +567,26 @@ header nav a:hover { text-decoration: underline; }
 
 .form-group textarea { resize: vertical; min-height: 80px; }
 
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.password-wrapper input {
+    padding-right: 2.5rem !important;
+    flex: 1;
+}
+.toggle-password {
+    position: absolute;
+    right: 0.75rem;
+    cursor: pointer;
+    color: #888;
+    font-size: 1.1rem;
+    user-select: none;
+    z-index: 2;
+}
+.toggle-password:hover { color: #333; }
+
 /*
   Button component classes.
   .btn is the base, .btn-primary and .btn-secondary

@@ -444,7 +444,10 @@ function renderLogin() {
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="login-password" required placeholder="Enter your password">
+                        <div class="password-wrapper">
+                            <input type="password" id="login-password" required placeholder="Enter your password">
+                            <i class="fas fa-eye toggle-password" onclick="togglePassword('login-password', this)"></i>
+                        </div>
                     </div>
                     <div style="text-align:right;margin-bottom:1rem;">
                         <a href="https://wa.me/254799307739?text=Hello%20Keja%20Go%2C%20I%20need%20help%20resetting%20my%20password" target="_blank" rel="noopener noreferrer" style="font-size:0.85rem;color:#25D366;"><i class="fab fa-whatsapp"></i> Forgot password?</a>
@@ -493,7 +496,10 @@ function renderRegister() {
                     </div>
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="reg-password" required minlength="4" placeholder="At least 4 characters">
+                        <div class="password-wrapper">
+                            <input type="password" id="reg-password" required minlength="4" placeholder="At least 4 characters">
+                            <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-password', this)"></i>
+                        </div>
                     </div>
                     <div class="form-group reg-terms-group">
                         <label class="reg-terms-label">
@@ -521,7 +527,10 @@ function renderAdminLogin() {
                 <form id="admin-login-form" onsubmit="event.preventDefault(); adminLogin()">
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="admin-login-password" required placeholder="Enter admin password" autofocus>
+                        <div class="password-wrapper">
+                            <input type="password" id="admin-login-password" required placeholder="Enter admin password" autofocus>
+                            <i class="fas fa-eye toggle-password" onclick="togglePassword('admin-login-password', this)"></i>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Unlock Dashboard</button>
                     <div id="admin-login-error" style="color:#c62828;margin-top:0.8rem;display:none;"></div>
